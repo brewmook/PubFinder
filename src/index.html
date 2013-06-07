@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,9 +26,16 @@
 
     function addPub(lat, lon, name)
     {
-        var marker = L.marker([lat, lon]);
-        marker.addTo(map);
-        marker.bindPopup(name);
+        var result = false;
+        var gcd = greatCircleDistance(55.948611, -3.200833, lat, lon);
+        if (gcd < 1.609)
+        {
+            var marker = L.marker([lat, lon]);
+            marker.addTo(map);
+            marker.bindPopup(name);
+            result = true;
+        }
+        return result;
     }
 
     function greatCircleDistance(lat1, lon1, lat2, lon2)
@@ -83,8 +89,8 @@
             {
                 if (el.tags && el.tags.name && el.lat && el.lon)
                 {
-                    addPub(el.lat, el.lon, el.tags.name);
-                    ++count;
+                    if (addPub(el.lat, el.lon, el.tags.name))
+                        ++count;
                 }
                 else
                 {
@@ -96,10 +102,8 @@
                 var loc = calcCentroid(el, nodes);
                 if (loc && el.tags && el.tags.name)
                 {
-                    var gcd = greatCircleDistance(55.948611, -3.200833, loc.lat, loc.lon);
-                    if (gcd < 1.609)
+                    if (addPub(loc.lat, loc.lon, el.tags.name))
                     {
-                        addPub(loc.lat, loc.lon, el.tags.name);
                         ++count;
                     }
                 }
