@@ -44,8 +44,6 @@
         var deg2rad = Math.PI/180.0;
         var lat1rad = lat1*deg2rad;
         var lat2rad = lat2*deg2rad;
-        var lon1rad = lon1*deg2rad;
-        var lon2rad = lon2*deg2rad;
 
         var deltaRo = Math.acos(Math.sin(lat1rad)*Math.sin(lat2rad) + Math.cos(lat1rad)*Math.cos(lat2rad)*Math.cos((lon2-lon1)*deg2rad));
         return 6372.8 * deltaRo;
@@ -80,9 +78,6 @@
         var count = 0;
         console.log(data);
         var nodes = {};
-        var ways = {};
-        data.elements.forEach(function(el) {
-        });
 
         data.elements.forEach(function(el) {
             if (el.type == "node")
