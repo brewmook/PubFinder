@@ -8,6 +8,16 @@
   <![endif]-->
   <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
   <script src="http://cdn.leafletjs.com/leaflet-0.5/leaflet.js"></script>
+      <script type="text/OverpassQL" id="overpass-query">
+        [out:json];
+        node["name"="Edinburgh Castle"];
+        (
+          node(around:1609)["amenity"~"^(pub|bar)$"];
+          way(around:1609)["amenity"~"^(pub|bar)$"];
+        );
+        (._;>;);
+        out body;
+      </script>
   </head>
 <body style="margin:0">
   <div id="map" style="height: 400px;"></div>
@@ -106,7 +116,12 @@
         });
         $('#message').text("Found " + count + " results.");
     }
+
+    $.ajax({
+        dataType: "json",
+        url: "http://overpass-api.de/api/interpreter?data=" + encodeURIComponent($('#overpass-query').text()),
+        success: osmResults
+    });
   </script>
-  <script type="text/javascript" src="http://overpass-api.de/api/interpreter?jsonp=osmResults&data=%5Bout%3Ajson%5D%3Bnode%5B%22name%22%3D%22Edinburgh%20Castle%22%5D%3B%28node%28around%3A1609%29%5B%22amenity%22%7E%22%5E%28pub%7Cbar%29%24%22%5D%3Bway%28around%3A1609%29%5B%22amenity%22%7E%22%5E%28pub%7Cbar%29%24%22%5D%3B%29%3B%28%2E%5F%3B%3E%3B%29%3Bout%20body%3B%0A"></script>
 </body>
 </html>
