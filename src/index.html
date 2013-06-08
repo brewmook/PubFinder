@@ -23,12 +23,13 @@
   <div id="map" style="height: 400px;"></div>
   <div id="message" style="text-align:center;">Searching...</div>
   <script>
-    var map = L.map('map').setView([55.948611, -3.200833], 13);
+    var target = { lat:55.948611, lon:-3.200833, radiusMetres:1609 };
+    var map = L.map('map').setView([target.lat, target.lon], 13);
     var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
     L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: osmAttr
 	}).addTo(map);
-    var circle = L.circle([55.948611, -3.200833], 1609, {
+    var circle = L.circle([target.lat, target.lon], target.radiusMetres, {
         color: 'red',
         fillColor: '#f03',
         fillOpacity: 0.1
@@ -37,8 +38,8 @@
     function addPub(lat, lon, name)
     {
         var result = false;
-        var gcd = greatCircleDistance(55.948611, -3.200833, lat, lon);
-        if (gcd < 1.609)
+        var gcd = greatCircleDistance(target.lat, target.lon, lat, lon);
+        if (gcd < target.radiusMetres)
         {
             var marker = L.marker([lat, lon]);
             marker.addTo(map);
@@ -56,7 +57,7 @@
         var lat2rad = lat2*deg2rad;
 
         var deltaRo = Math.acos(Math.sin(lat1rad)*Math.sin(lat2rad) + Math.cos(lat1rad)*Math.cos(lat2rad)*Math.cos((lon2-lon1)*deg2rad));
-        return 6372.8 * deltaRo;
+        return 6372800 * deltaRo;
     }
 
     function interpolate(low, high)
