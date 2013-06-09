@@ -8,11 +8,11 @@
   <![endif]-->
   <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
   <script src="http://cdn.leafletjs.com/leaflet-0.5/leaflet.js"></script>
-      <script type="text/OverpassQL" id="overpass-query">
+      <script type="text/OverpassQLTemplate" id="overpass-query-template">
         [out:json];
         (
-          node(around:1609,55.948611,-3.200833)["amenity"~"^(pub|bar)$"];
-          way(around:1609,55.948611,-3.200833)["amenity"~"^(pub|bar)$"];
+          node(around:{rad},{lat},{lon})["amenity"~"^(pub|bar)$"];
+          way(around:{rad},{lat},{lon})["amenity"~"^(pub|bar)$"];
         );
         (._;>;);
         out body;
@@ -97,9 +97,19 @@
         $('#message').text("Found " + count + " results.");
     }
 
+    function overpassQueryUrl(target)
+    {
+        var url = "http://overpass-api.de/api/interpreter?data=";
+        var queryTemplate = $('#overpass-query-template').text();
+        var query = queryTemplate.replace(/\{rad\}/g, target.radiusMetres);
+        query = query.replace(/\{lat\}/g, target.lat);
+        query = query.replace(/\{lon\}/g, target.lon);
+        return url + encodeURIComponent(query);
+    }
+
     $.ajax({
         dataType: "json",
-        url: "http://overpass-api.de/api/interpreter?data=" + encodeURIComponent($('#overpass-query').text()),
+        url: overpassQueryUrl(target),
         success: osmResults
     });
   </script>
