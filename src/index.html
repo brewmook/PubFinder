@@ -41,7 +41,7 @@
     {
         var marker = L.marker([lat, lon]);
         marker.addTo(map);
-        marker.bindPopup(label);
+        marker.bindPopup(label || "<i>Unknown</i>");
     }
 
     function interpolate(low, high)
@@ -67,8 +67,13 @@
 
         return {lat:interpolate(latLow,latHigh), lon:interpolate(lonLow, lonHigh)};
     }
+
+    function relevant(amenitiesRE, tags)
+    {
+        return tags && amenitiesRE.test(tags.amenity);
+    }
     
-    function osmResults(map, data)
+    function osmResults(map, amenitiesRE, data)
     {
         var count = 0;
         console.log(data);
@@ -77,7 +82,7 @@
         data.elements.forEach(function(el) {
             if (el.type == "node")
             {
-                if (el.tags && el.tags.name && el.lat && el.lon)
+                if (el.lat && el.lon && relevant(amenitiesRE, el.tags))
                 {
                     addFlag(map, el.lat, el.lon, el.tags.name);
                     ++count;
@@ -90,7 +95,7 @@
             else
             {
                 var loc = calcCentroid(el, nodes);
-                if (loc && el.tags && el.tags.name)
+                if (loc && relevant(amenitiesRE, el.tags))
                 {
                     addFlag(map, loc.lat, loc.lon, el.tags.name);
                     ++count;
@@ -119,7 +124,7 @@
     $.ajax({
         dataType: "json",
         url: overpassQueryUrl(target, amenities),
-        success: function(data) { osmResults(map, data); }
+        success: function(data) { osmResults(map, amenities, data); }
     });
   </script>
 </body>
