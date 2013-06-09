@@ -35,7 +35,7 @@
         fillOpacity: 0.1
     }).addTo(map);
 
-    function addPub(lat, lon, name)
+    function addFlag(lat, lon, label)
     {
         var result = false;
         var gcd = greatCircleDistance(target.lat, target.lon, lat, lon);
@@ -43,7 +43,7 @@
         {
             var marker = L.marker([lat, lon]);
             marker.addTo(map);
-            marker.bindPopup(name);
+            marker.bindPopup(label);
             result = true;
         }
         return result;
@@ -95,7 +95,7 @@
             {
                 if (el.tags && el.tags.name && el.lat && el.lon)
                 {
-                    if (addPub(el.lat, el.lon, el.tags.name))
+                    if (addFlag(el.lat, el.lon, el.tags.name))
                         ++count;
                 }
                 else
@@ -108,7 +108,7 @@
                 var loc = calcCentroid(el, nodes);
                 if (loc && el.tags && el.tags.name)
                 {
-                    if (addPub(loc.lat, loc.lon, el.tags.name))
+                    if (addFlag(loc.lat, loc.lon, el.tags.name))
                     {
                         ++count;
                     }
