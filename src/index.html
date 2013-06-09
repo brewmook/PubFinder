@@ -11,8 +11,8 @@
       <script type="text/OverpassQLTemplate" id="overpass-query-template">
         [out:json];
         (
-          node(around:{rad},{lat},{lon})["amenity"~"^(pub|bar)$"];
-          way(around:{rad},{lat},{lon})["amenity"~"^(pub|bar)$"];
+          node(around:{rad},{lat},{lon})["amenity"~"{amenities}"];
+          way(around:{rad},{lat},{lon})["amenity"~"{amenities}"];
         );
         (._;>;);
         out body;
@@ -23,6 +23,8 @@
   <div id="message" style="text-align:center;">Searching...</div>
   <script>
     var target = { lat:55.948611, lon:-3.200833, radiusMetres:1609 };
+    var amenities = /^(pub|bar)$/;
+
     var map = L.map('map').setView([target.lat, target.lon], 13);
     var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
     L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -97,19 +99,21 @@
         $('#message').text("Found " + count + " results.");
     }
 
-    function overpassQueryUrl(target)
+    function overpassQueryUrl(target, amenitiesRE)
     {
+        var amenities = amenitiesRE.toString();
         var url = "http://overpass-api.de/api/interpreter?data=";
         var queryTemplate = $('#overpass-query-template').text();
         var query = queryTemplate.replace(/\{rad\}/g, target.radiusMetres);
         query = query.replace(/\{lat\}/g, target.lat);
         query = query.replace(/\{lon\}/g, target.lon);
+        query = query.replace(/\{amenities\}/g, amenities.substring(1, amenities.length-1));
         return url + encodeURIComponent(query);
     }
 
     $.ajax({
         dataType: "json",
-        url: overpassQueryUrl(target),
+        url: overpassQueryUrl(target, amenities),
         success: osmResults
     });
   </script>
