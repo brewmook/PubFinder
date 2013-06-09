@@ -10,10 +10,9 @@
   <script src="http://cdn.leafletjs.com/leaflet-0.5/leaflet.js"></script>
       <script type="text/OverpassQL" id="overpass-query">
         [out:json];
-        node["name"="Edinburgh Castle"];
         (
-          node(around:1609)["amenity"~"^(pub|bar)$"];
-          way(around:1609)["amenity"~"^(pub|bar)$"];
+          node(around:1609,55.948611,-3.200833)["amenity"~"^(pub|bar)$"];
+          way(around:1609,55.948611,-3.200833)["amenity"~"^(pub|bar)$"];
         );
         (._;>;);
         out body;
@@ -37,27 +36,9 @@
 
     function addFlag(lat, lon, label)
     {
-        var result = false;
-        var gcd = greatCircleDistance(target.lat, target.lon, lat, lon);
-        if (gcd < target.radiusMetres)
-        {
-            var marker = L.marker([lat, lon]);
-            marker.addTo(map);
-            marker.bindPopup(label);
-            result = true;
-        }
-        return result;
-    }
-
-    function greatCircleDistance(lat1, lon1, lat2, lon2)
-    {
-        // From http://en.wikipedia.org/wiki/Great-circle_distance
-        var deg2rad = Math.PI/180.0;
-        var lat1rad = lat1*deg2rad;
-        var lat2rad = lat2*deg2rad;
-
-        var deltaRo = Math.acos(Math.sin(lat1rad)*Math.sin(lat2rad) + Math.cos(lat1rad)*Math.cos(lat2rad)*Math.cos((lon2-lon1)*deg2rad));
-        return 6372800 * deltaRo;
+        var marker = L.marker([lat, lon]);
+        marker.addTo(map);
+        marker.bindPopup(label);
     }
 
     function interpolate(low, high)
@@ -95,8 +76,8 @@
             {
                 if (el.tags && el.tags.name && el.lat && el.lon)
                 {
-                    if (addFlag(el.lat, el.lon, el.tags.name))
-                        ++count;
+                    addFlag(el.lat, el.lon, el.tags.name);
+                    ++count;
                 }
                 else
                 {
@@ -108,10 +89,8 @@
                 var loc = calcCentroid(el, nodes);
                 if (loc && el.tags && el.tags.name)
                 {
-                    if (addFlag(loc.lat, loc.lon, el.tags.name))
-                    {
-                        ++count;
-                    }
+                    addFlag(loc.lat, loc.lon, el.tags.name);
+                    ++count;
                 }
             }
         });
