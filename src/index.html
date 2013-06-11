@@ -76,8 +76,7 @@
     function osmResults(map, amenitiesRE, data)
     {
         var count = 0;
-        console.log(data);
-        var nodes = {};
+        var areaNodes = {};
 
         data.elements.forEach(function(el) {
             if (el.type == "node")
@@ -89,12 +88,12 @@
                 }
                 else
                 {
-                    nodes[el.id] = el;
+                    areaNodes[el.id] = el;
                 }
             }
             else
             {
-                var loc = calcCentroid(el, nodes);
+                var loc = calcCentroid(el, areaNodes);
                 if (loc && relevant(amenitiesRE, el.tags))
                 {
                     addFlag(map, loc.lat, loc.lon, el.tags.name);
@@ -125,7 +124,7 @@
         dataType: "json",
         url: overpassQueryUrl(target, amenities),
         success: function(data) { osmResults(map, amenities, data); }
-    });
+    }).fail(function() { $('#message').text("Failed."); });
   </script>
 </body>
 </html>
