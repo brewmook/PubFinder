@@ -129,7 +129,8 @@
     $.ajax({
         dataType: "json",
         url: overpassQueryUrl(target, amenities),
-        success: function(data) { osmResults(map, amenities, data); }
+        success: function(data) { osmResults(map, amenities, data); },
+        timeout: 10000
     }).fail(function() { $('#message').text("Failed."); });
   </script>
 </body>
