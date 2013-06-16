@@ -23,115 +23,118 @@
         html, body, #map { height: 100%; }
         #message { position: absolute; top:0px; right:0px; background-color: white; padding:0 4px 2px; }
     </style>
-</head>
-<body>
-  <div id="map"></div>
-  <div id="message">Searching...</div>
-  <script>
-    function setupMap(target)
-    {
-        var map = L.map('map').setView([target.lat, target.lon], 13);
-        var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
-        L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: osmAttr
-        }).addTo(map);
-        var circle = L.circle([target.lat, target.lon], target.radiusMetres, {
-            color: 'red',
-            fillColor: '#f03',
-            fillOpacity: 0.1
-        }).addTo(map);
-        return map;
-    }
+    <script type="text/javascript">
+        function setupMap(target)
+        {
+            var map = L.map('map').setView([target.lat, target.lon], 13);
+            var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
+            L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: osmAttr
+            }).addTo(map);
+            var circle = L.circle([target.lat, target.lon], target.radiusMetres, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.1
+            }).addTo(map);
+            return map;
+        }
 
-    function addFlag(map, lat, lon, label)
-    {
-        var marker = L.marker([lat, lon]);
-        marker.addTo(map);
-        marker.bindPopup(label || "<i>Unknown</i>");
-    }
+        function addFlag(map, lat, lon, label)
+        {
+            var marker = L.marker([lat, lon]);
+            marker.addTo(map);
+            marker.bindPopup(label || "<i>Unknown</i>");
+        }
 
-    function interpolate(low, high)
-    {
-        return low + ((high-low)/2.0);
-    }
+        function interpolate(low, high)
+        {
+            return low + ((high-low)/2.0);
+        }
 
-    function calcCentroid(way, nodes)
-    {
-        var node = nodes[way.nodes[0]];
-        var latLow = node.lat;
-        var lonLow = node.lon;
-        var latHigh = node.lat;
-        var lonHigh = node.lon;
+        function calcCentroid(way, nodes)
+        {
+            var node = nodes[way.nodes[0]];
+            var latLow = node.lat;
+            var lonLow = node.lon;
+            var latHigh = node.lat;
+            var lonHigh = node.lon;
 
-        way.nodes.forEach(function(nodeIndex) {
-            node = nodes[nodeIndex];
-            latLow = Math.min(latLow, node.lat);
-            lonLow = Math.min(lonLow, node.lon);
-            latHigh = Math.max(latHigh, node.lat);
-            lonHigh = Math.max(lonHigh, node.lon);
-        });
+            way.nodes.forEach(function(nodeIndex) {
+                node = nodes[nodeIndex];
+                latLow = Math.min(latLow, node.lat);
+                lonLow = Math.min(lonLow, node.lon);
+                latHigh = Math.max(latHigh, node.lat);
+                lonHigh = Math.max(lonHigh, node.lon);
+            });
 
-        return {lat:interpolate(latLow,latHigh), lon:interpolate(lonLow, lonHigh)};
-    }
+            return {lat:interpolate(latLow,latHigh), lon:interpolate(lonLow, lonHigh)};
+        }
 
-    function relevant(amenitiesRE, tags)
-    {
-        return tags && amenitiesRE.test(tags.amenity);
-    }
-    
-    function osmResults(map, amenitiesRE, data)
-    {
-        var count = 0;
-        var areaNodes = {};
+        function relevant(amenitiesRE, tags)
+        {
+            return tags && amenitiesRE.test(tags.amenity);
+        }
 
-        data.elements.forEach(function(el) {
-            if (el.type == "node")
-            {
-                if (el.lat && el.lon && relevant(amenitiesRE, el.tags))
+        function osmResults(map, amenitiesRE, data)
+        {
+            var count = 0;
+            var areaNodes = {};
+
+            data.elements.forEach(function(el) {
+                if (el.type == "node")
                 {
-                    addFlag(map, el.lat, el.lon, el.tags.name);
-                    ++count;
+                    if (el.lat && el.lon && relevant(amenitiesRE, el.tags))
+                    {
+                        addFlag(map, el.lat, el.lon, el.tags.name);
+                        ++count;
+                    }
+                    else
+                    {
+                        areaNodes[el.id] = el;
+                    }
                 }
                 else
                 {
-                    areaNodes[el.id] = el;
+                    var loc = calcCentroid(el, areaNodes);
+                    if (loc && relevant(amenitiesRE, el.tags))
+                    {
+                        addFlag(map, loc.lat, loc.lon, el.tags.name);
+                        ++count;
+                    }
                 }
-            }
-            else
-            {
-                var loc = calcCentroid(el, areaNodes);
-                if (loc && relevant(amenitiesRE, el.tags))
-                {
-                    addFlag(map, loc.lat, loc.lon, el.tags.name);
-                    ++count;
-                }
-            }
-        });
-        $('#message').text("Found " + count + " results.");
-    }
+            });
+            $('#message').text("Found " + count + " results.");
+        }
 
-    function overpassQueryUrl(target, amenitiesRE)
-    {
-        var amenities = amenitiesRE.toString();
-        var url = "http://overpass-api.de/api/interpreter?data=";
-        var queryTemplate = $('#overpass-query-template').text();
-        var query = queryTemplate.replace(/\{rad\}/g, target.radiusMetres);
-        query = query.replace(/\{lat\}/g, target.lat);
-        query = query.replace(/\{lon\}/g, target.lon);
-        query = query.replace(/\{amenities\}/g, amenities.substring(1, amenities.length-1));
-        return url + encodeURIComponent(query);
-    }
+        function overpassQueryUrl(target, amenitiesRE)
+        {
+            var amenities = amenitiesRE.toString();
+            var url = "http://overpass-api.de/api/interpreter?data=";
+            var queryTemplate = $('#overpass-query-template').text();
+            var query = queryTemplate.replace(/\{rad\}/g, target.radiusMetres);
+            query = query.replace(/\{lat\}/g, target.lat);
+            query = query.replace(/\{lon\}/g, target.lon);
+            query = query.replace(/\{amenities\}/g, amenities.substring(1, amenities.length-1));
+            return url + encodeURIComponent(query);
+        }
 
-    var target = { lat:55.94816654144937, lon:-3.1994622945785522, radiusMetres:1609 };
-    var amenities = /^(pub|bar)$/;
-    var map = setupMap(target);
+        function initialisePubFinder()
+        {
+            var target = { lat:55.94816654144937, lon:-3.1994622945785522, radiusMetres:1609 };
+            var amenities = /^(pub|bar)$/;
+            var map = setupMap(target);
 
-    $.ajax({
-        dataType: "json",
-        url: overpassQueryUrl(target, amenities),
-        success: function(data) { osmResults(map, amenities, data); },
-        timeout: 10000
-    }).fail(function() { $('#message').text("Failed."); });
-  </script>
+            $.ajax({
+                dataType: "json",
+                url: overpassQueryUrl(target, amenities),
+                success: function(data) { osmResults(map, amenities, data); },
+                timeout: 10000
+            }).fail(function() { $('#message').text("Failed."); });
+        }
+    </script>
+</head>
+<body onload="initialisePubFinder()">
+  <div id="map"></div>
+  <div id="message">Searching...</div>
 </body>
 </html>
