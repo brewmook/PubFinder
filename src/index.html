@@ -9,6 +9,7 @@
     <![endif]-->
     <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
     <script src="http://cdn.leafletjs.com/leaflet-0.5/leaflet.js"></script>
+    <script src="lib/L.CircleEditor.js" ></script>
     <script type="text/OverpassQLTemplate" id="overpass-query-template">
         [out:json];
         (
@@ -24,17 +25,12 @@
         #message { position: absolute; top:0px; right:0px; background-color: white; padding:0 4px 2px; }
     </style>
     <script type="text/javascript">
-        function setupMap(target)
+        function createMap(target)
         {
             var map = L.map('map').setView([target.lat, target.lon], 13);
             var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
             L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: osmAttr
-            }).addTo(map);
-            var circle = L.circle([target.lat, target.lon], target.radiusMetres, {
-                color: 'red',
-                fillColor: '#f03',
-                fillOpacity: 0.1
             }).addTo(map);
             return map;
         }
@@ -80,8 +76,6 @@
             var count = 0;
             var areaNodes = {};
 
-            pubsLayer.clearLayers();
-
             data.elements.forEach(function(el) {
                 if (el.type == "node")
                 {
@@ -122,6 +116,8 @@
 
         function findPubs(pubsLayer, target, amenitiesRE)
         {
+            pubsLayer.clearLayers();
+
             $.ajax({
                 dataType: "json",
                 url: overpassQueryUrl(target, amenitiesRE),
@@ -134,8 +130,20 @@
         {
             var target = { lat:55.94816654144937, lon:-3.1994622945785522, radiusMetres:1609 };
             var amenities = /^(pub|bar)$/;
-            var map = setupMap(target);
+            var map = createMap(target);
+
             var pubsLayer = new L.LayerGroup().addTo(map);
+
+            var circle = new L.CircleEditor([target.lat, target.lon], target.radiusMetres, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.1
+            });
+            map.addLayer(circle);
+
+            circle.on('edit', function() {
+                findPubs(pubsLayer, { lat:this._latlng.lat, lon:this._latlng.lng, radiusMetres:this._mRadius }, amenities);
+            });
 
             findPubs(pubsLayer, target, amenities);
         }
