@@ -39,10 +39,10 @@
             return map;
         }
 
-        function addFlag(map, lat, lon, label)
+        function addFlag(layer, lat, lon, label)
         {
             var marker = L.marker([lat, lon]);
-            marker.addTo(map);
+            marker.addTo(layer);
             marker.bindPopup(label || "<i>Unknown</i>");
         }
 
@@ -75,17 +75,19 @@
             return tags && amenitiesRE.test(tags.amenity);
         }
 
-        function osmResults(map, amenitiesRE, data)
+        function osmResults(pubsLayer, amenitiesRE, data)
         {
             var count = 0;
             var areaNodes = {};
+
+            pubsLayer.clearLayers();
 
             data.elements.forEach(function(el) {
                 if (el.type == "node")
                 {
                     if (el.lat && el.lon && relevant(amenitiesRE, el.tags))
                     {
-                        addFlag(map, el.lat, el.lon, el.tags.name);
+                        addFlag(pubsLayer, el.lat, el.lon, el.tags.name);
                         ++count;
                     }
                     else
@@ -98,7 +100,7 @@
                     var loc = calcCentroid(el, areaNodes);
                     if (loc && relevant(amenitiesRE, el.tags))
                     {
-                        addFlag(map, loc.lat, loc.lon, el.tags.name);
+                        addFlag(pubsLayer, loc.lat, loc.lon, el.tags.name);
                         ++count;
                     }
                 }
@@ -118,18 +120,24 @@
             return url + encodeURIComponent(query);
         }
 
+        function findPubs(pubsLayer, target, amenitiesRE)
+        {
+            $.ajax({
+                dataType: "json",
+                url: overpassQueryUrl(target, amenitiesRE),
+                success: function(data) { osmResults(pubsLayer, amenitiesRE, data); },
+                timeout: 10000
+            }).fail(function() { $('#message').text("Failed."); });
+        }
+
         function initialisePubFinder()
         {
             var target = { lat:55.94816654144937, lon:-3.1994622945785522, radiusMetres:1609 };
             var amenities = /^(pub|bar)$/;
             var map = setupMap(target);
+            var pubsLayer = new L.LayerGroup().addTo(map);
 
-            $.ajax({
-                dataType: "json",
-                url: overpassQueryUrl(target, amenities),
-                success: function(data) { osmResults(map, amenities, data); },
-                timeout: 10000
-            }).fail(function() { $('#message').text("Failed."); });
+            findPubs(pubsLayer, target, amenities);
         }
     </script>
 </head>
