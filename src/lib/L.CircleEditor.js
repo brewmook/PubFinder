@@ -52,10 +52,10 @@ L.CircleEditor = L.Circle.extend ({
     _initMarkers: function () {
         this._markerGroup = new L.LayerGroup();
 
-        this.centerMarker = this._createMarker(this._latlng);
-        this.centerMarker.on('drag', this._onCenterDrag, this);
-        this.centerMarker.on('dragend', this._onCenterDragEnd, this);
-        this.centerMarker._origLatLng = this._latlng;
+        this._centerMarker = this._createMarker(this._latlng);
+        this._centerMarker.on('drag', this._onCenterDrag, this);
+        this._centerMarker.on('dragend', this._onCenterDragEnd, this);
+        this._centerMarker._origLatLng = this._latlng;
 
         this._circumferenceMarker = this._createMarker(this._boundaryCoord());
         this._circumferenceMarker.on('drag', this._onCircumferenceDrag, this);
@@ -94,7 +94,7 @@ L.CircleEditor = L.Circle.extend ({
         var marker = e.target;
         var axis = marker._latlng;
 
-        var distance = this.centerMarker.getLatLng().distanceTo(axis);
+        var distance = this._centerMarker.getLatLng().distanceTo(axis);
 
         this.setRadius(distance);
 
