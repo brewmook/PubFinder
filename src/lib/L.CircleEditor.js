@@ -1,7 +1,3 @@
-/*
- * L.CircleEditor is an extension of L.Circle, just to add the edition part (remember, radius in meters).
- */
-
 L.CircleEditor = L.Circle.extend ({
 
     options: {
@@ -56,63 +52,45 @@ L.CircleEditor = L.Circle.extend ({
     _initMarkers: function () {
         this._markerGroup = new L.LayerGroup();
 
-        this.centerMarker = this._createMarker(this._latlng, 0, true);
-        this.centerMarker.on('click', this._onCenterMarkerClick, this);
+        this.centerMarker = this._createMarker(this._latlng);
+        this.centerMarker.on('drag', this._onCenterDrag, this);
+        this.centerMarker.on('dragend', this._onCenterDragEnd, this);
+        this.centerMarker._origLatLng = this._latlng;
 
-        this._circumferenceMarker = this._createMarker(this._boundaryCoord(), 1);
+        this._circumferenceMarker = this._createMarker(this._boundaryCoord());
+        this._circumferenceMarker.on('drag', this._onCircumferenceDrag, this);
+        this._circumferenceMarker.on('dragend', this._onCircumferenceDragEnd, this);
     },
 
-    _createMarker: function (latlng, index, isCenter) {
+    _createMarker: function(latlng) {
         var marker = new L.Marker(latlng, {
             draggable: true,
             icon: this.options.icon
         });
-
-        if (isCenter === undefined) {
-            isCenter = false;
-        }
-
-        marker._origLatLng = latlng;
-        marker._index = index;
-        marker._isCenter = isCenter;
-
-        if (isCenter) {
-            marker.on('drag', this._onCenterMove, this);
-            marker.on('dragend', this._onCenterMoveEnd, this);
-        } else {
-            marker.on('drag', this._onMarkerDrag, this);
-        }
-        marker.on('dragend', this._fireEdit, this);
 
         this._markerGroup.addLayer(marker);
 
         return marker;
     },
 
-    _fireEdit: function () {
-        this.fire('edit');
-    },
-
-    _onCenterMove: function (e) {
+    _onCenterDrag: function (e) {
         var marker = e.target;
 
         L.Util.extend(marker._origLatLng, marker._latlng);
 
-        this._circumferenceMarker.setOpacity(0.1);
-
         this.redraw();
     },
 
-    _onCenterMoveEnd: function (e) {
+    _onCenterDragEnd: function (e) {
         var marker = e.target;
 
         this._circumferenceMarker.setLatLng(this._boundaryCoord());
-        this._circumferenceMarker.setOpacity(1);
 
         this.fire('centerchange');
+        this.fire('edit');
     },
 
-    _onMarkerDrag: function (e) {
+    _onCircumferenceDrag: function (e) {
         var marker = e.target;
         var axis = marker._latlng;
 
@@ -123,6 +101,11 @@ L.CircleEditor = L.Circle.extend ({
         this.redraw();
 
         this.fire('radiuschange');
+    },
+
+    _onCircumferenceDragEnd: function () {
+        this.fire('radiuschange');
+        this.fire('edit');
     },
 
     centerchange: function() {},
