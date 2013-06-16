@@ -15,7 +15,6 @@ L.CircleEditor = L.Circle.extend ({
             this._centerMarker = this._createMarker(this.getLatLng());
             this._centerMarker.on('drag', this._onCenterDrag, this);
             this._centerMarker.on('dragend', this._onCenterDragEnd, this);
-            this._centerMarker._origLatLng = this.getLatLng();
 
             this._circumferenceMarker = this._createMarker(this._boundaryCoord());
             this._circumferenceMarker.on('drag', this._onCircumferenceDrag, this);
@@ -39,7 +38,7 @@ L.CircleEditor = L.Circle.extend ({
         var circleBounds = this.getBounds();
         var swCoord = circleBounds.getSouthWest();
         var neCoord = circleBounds.getNorthEast();
-        return new L.LatLng((neCoord.lat + swCoord.lat) / 2, neCoord.lng, true);
+        return new L.LatLng((neCoord.lat + swCoord.lat) / 2, neCoord.lng);
     },
 
     _createMarker: function(latlng) {
@@ -52,14 +51,15 @@ L.CircleEditor = L.Circle.extend ({
     },
 
     _onCenterDrag: function (e) {
-        this.setLatLng(e.target.getLatLng());
+        var newCenter = e.target.getLatLng();
+        this._circumferenceMarker.setLatLng([this._circumferenceMarker.getLatLng().lat - this.getLatLng().lat + newCenter.lat,
+                                             this._circumferenceMarker.getLatLng().lng - this.getLatLng().lng + newCenter.lng]);
+        this.setLatLng(newCenter);
         this.redraw();
         this.fire('centerchange');
     },
 
     _onCenterDragEnd: function (e) {
-        this._circumferenceMarker.setLatLng(this._boundaryCoord());
-        this.fire('centerchange');
         this.fire('edit');
     },
 
@@ -71,7 +71,6 @@ L.CircleEditor = L.Circle.extend ({
     },
 
     _onCircumferenceDragEnd: function () {
-        this.fire('radiuschange');
         this.fire('edit');
     },
 
