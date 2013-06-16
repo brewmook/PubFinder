@@ -4,142 +4,139 @@
 
 L.CircleEditor = L.Circle.extend ({
 
-	options: {
-		icon: new L.DivIcon({
-			iconSize: new L.Point(8, 8),
-			className: 'leaflet-div-icon leaflet-editing-icon'
-		})
-	},
+    options: {
+        icon: new L.DivIcon({
+            iconSize: new L.Point(8, 8),
+            className: 'leaflet-div-icon leaflet-editing-icon'
+        })
+    },
 
-	onAdd: function (map) {
-		L.Path.prototype.onAdd.call(this, map);
+    onAdd: function (map) {
+        L.Path.prototype.onAdd.call(this, map);
 
-		this.addHooks();
-	},
+        this.addHooks();
+    },
 
-	onRemove: function (map) {
-		this.removeHooks();
+    onRemove: function (map) {
+        this.removeHooks();
 
-		L.Path.prototype.onRemove.call(this, map);
-	},
+        L.Path.prototype.onRemove.call(this, map);
+    },
 
 
-	addHooks: function () {
-		if (this._map) {
-			if (!this._markerGroup) {
-				this._initMarkers();
-			}
-			this._map.addLayer(this._markerGroup);
-		}
-	},
+    addHooks: function () {
+        if (this._map) {
+            if (!this._markerGroup) {
+                this._initMarkers();
+            }
+            this._map.addLayer(this._markerGroup);
+        }
+    },
 
-	removeHooks: function () {
-		if (this._map) {
-			this._map.removeLayer(this._markerGroup);
-			delete this._markerGroup;
-			delete this._markers;
-		}
-	},
+    removeHooks: function () {
+        if (this._map) {
+            this._map.removeLayer(this._markerGroup);
+            delete this._markerGroup;
+            delete this._markers;
+        }
+    },
 
-	updateMarkers: function () {
-		this._markerGroup.clearLayers();
-		this._initMarkers();
-	},
+    updateMarkers: function () {
+        this._markerGroup.clearLayers();
+        this._initMarkers();
+    },
 
-	_initMarkers: function () {
-		this._markerGroup = new L.LayerGroup();
-		this._markers = [];
+    _boundaryCoord: function() {
+        var circleBounds = this.getBounds();
+        var swCoord = circleBounds.getSouthWest();
+        var neCoord = circleBounds.getNorthEast();
+        return new L.LatLng(neCoord.lat, (neCoord.lng + swCoord.lng) / 2, true);
+    },
 
-		var markerCenter = this._createMarker(this._latlng, 0, true);
-		markerCenter.on('click', this._onCenterMarkerClick, this);
-		this._markers.push(markerCenter);
+    _initMarkers: function () {
+        this._markerGroup = new L.LayerGroup();
+        this._markers = [];
 
-		var circleBounds = this.getBounds(),
-			swCoord = circleBounds.getSouthWest(),
-			neCoord = circleBounds.getNorthEast(),
-			northCenterCoord = new L.LatLng(neCoord.lat, (neCoord.lng + neCoord.lng) / 2, true),
-			markerNorthCenter = this._createMarker(northCenterCoord, 1);
-		this._markers.push(markerNorthCenter);
-	},
+        var markerCenter = this._createMarker(this._latlng, 0, true);
+        markerCenter.on('click', this._onCenterMarkerClick, this);
+        this._markers.push(markerCenter);
 
-	_createMarker: function (latlng, index, isCenter) {
-		var marker = new L.Marker(latlng, {
-			draggable: true,
-			icon: this.options.icon
-		});
+        var markerNorthCenter = this._createMarker(this._boundaryCoord(), 1);
+        this._markers.push(markerNorthCenter);
+    },
 
-		if (isCenter === undefined) {
-			isCenter = false;
-		}
-		//console.log("this is center point: " + isCenter);
+    _createMarker: function (latlng, index, isCenter) {
+        var marker = new L.Marker(latlng, {
+            draggable: true,
+            icon: this.options.icon
+        });
 
-		marker._origLatLng = latlng;
-		marker._index = index;
-		marker._isCenter = isCenter;
+        if (isCenter === undefined) {
+            isCenter = false;
+        }
+        //console.log("this is center point: " + isCenter);
 
-		if (isCenter) {
-			marker.on('drag', this._onCenterMove, this);
-			marker.on('dragend', this._onCenterMoveEnd, this);
-		} else {
-			marker.on('drag', this._onMarkerDrag, this);
-		}
-		marker.on('dragend', this._fireEdit, this);
+        marker._origLatLng = latlng;
+        marker._index = index;
+        marker._isCenter = isCenter;
 
-		this._markerGroup.addLayer(marker);
+        if (isCenter) {
+            marker.on('drag', this._onCenterMove, this);
+            marker.on('dragend', this._onCenterMoveEnd, this);
+        } else {
+            marker.on('drag', this._onMarkerDrag, this);
+        }
+        marker.on('dragend', this._fireEdit, this);
 
-		return marker;
-	},
+        this._markerGroup.addLayer(marker);
 
-	_fireEdit: function () {
-		this.fire('edit');
-	},
+        return marker;
+    },
 
-	_onCenterMove: function (e) {
-		var marker = e.target;
-		//console.log("center move - START");
+    _fireEdit: function () {
+        this.fire('edit');
+    },
 
-		L.Util.extend(marker._origLatLng, marker._latlng);
+    _onCenterMove: function (e) {
+        var marker = e.target;
+        //console.log("center move - START");
 
-		var mm = this._markers[1];
-		mm.setOpacity(0.1);
+        L.Util.extend(marker._origLatLng, marker._latlng);
 
-		this.redraw();
-		
-		//console.log("END");
-	},
+        var mm = this._markers[1];
+        mm.setOpacity(0.1);
 
-	_onCenterMoveEnd: function (e) {
-		var marker = e.target;
-		
-		//now resetting the side point
-		var circleBounds = this.getBounds(),
-			swCoord = circleBounds.getSouthWest(),
-			neCoord = circleBounds.getNorthEast(),
-			northCenterCoord = new L.LatLng(neCoord.lat, (neCoord.lng + neCoord.lng) / 2, true);
+        this.redraw();
 
-		var mm = this._markers[1];
-		mm.setLatLng(northCenterCoord);
-		mm.setOpacity(1);
+        //console.log("END");
+    },
 
-		this.fire('centerchange');
-	},
+    _onCenterMoveEnd: function (e) {
+        var marker = e.target;
 
-	_onMarkerDrag: function (e) {
-		var marker = e.target;
-		//console.log("marker drag - START");
-		var center = this._markers[0].getLatLng();
-		var axis = marker._latlng;
+        var mm = this._markers[1];
+        mm.setLatLng(this._boundaryCoord());
+        mm.setOpacity(1);
 
-		var distance = center.distanceTo(axis);
+        this.fire('centerchange');
+    },
 
-		this.setRadius(distance);
-        
-		this.redraw();
-		//console.log("END");
+    _onMarkerDrag: function (e) {
+        var marker = e.target;
+        //console.log("marker drag - START");
+        var center = this._markers[0].getLatLng();
+        var axis = marker._latlng;
 
-		this.fire('radiuschange');
-	},
+        var distance = center.distanceTo(axis);
 
-	centerchange: function() {},
-	radiuschange: function() {}
+        this.setRadius(distance);
+
+        this.redraw();
+        //console.log("END");
+
+        this.fire('radiuschange');
+    },
+
+    centerchange: function() {},
+    radiuschange: function() {}
 });
